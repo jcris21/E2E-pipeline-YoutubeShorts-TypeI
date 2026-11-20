@@ -48,7 +48,17 @@ Ver `scripts/hyperframes/template_general_video.html` — plantilla **validada c
 3. Registrar el timeline vacío requerido por el runtime: `window.__timelines["<composition-id>"] = gsap.timeline({ paused: true })`.
 4. Por cada short: inyectar las rutas reales (11 clips + VO + música) en la plantilla y correr `npm run check` — **debe pasar con 0 errores** antes de continuar.
 5. `npm run render` (o `npx hyperframes render`) para el MP4 final. En este sandbox un short de 90s tardó ~6 min (screenshot/software GPU capture — en un runner con GPU de verdad o `chrome-headless-shell` debería ser más rápido).
-6. `npx hyperframes preview` para QA visual interactivo si hace falta ajustar timing antes del render final.
+6. `npx hyperframes preview` para QA visual interactivo si hace falta ajustar timing antes del render final (ver sección siguiente — **validado en vivo**, no solo documentado).
+
+## Preview en vivo / edición interactiva (HyperFrames Studio) — validado
+
+`npx hyperframes preview` levanta **Studio**, un servidor local (por defecto `http://localhost:3002`) con una UI de navegador para ver la composición renderizándose en vivo y editar elementos directamente — sin volver a correr `render` para cada ajuste.
+
+**Esto se probó de extremo a extremo**, no solo se documentó:
+- Dos lanzadores de un clic están en `scripts/hyperframes/`: `abrir-studio.cmd` (Windows) y `abrir-studio.sh` (macOS/Linux) — copian el patrón `cd "<carpeta del proyecto>" && npx --yes hyperframes@0.9.71 preview --port 3002`. Requieren Node.js 22+ instalado en esa máquina.
+- Con Studio corriendo, se abrió `http://localhost:3002/#project/<nombre-del-proyecto>` en un navegador — la URL incluye `#project/<id>` para apuntar directo al proyecto si hay varios activos.
+- Confirmado visualmente: el panel **Preview** reproduce la composición completa (clips, overlay de marca, timeline de 1:30 para un short de 90s); el panel **Timeline** lista las pistas; el panel **Layers/Inspector** permite seleccionar cualquier elemento por su `id` (de ahí la regla de IDs únicos arriba) y editarlo sin tocar el HTML a mano.
+- ⚠️ Studio corre como proceso local — si la terminal/consola donde se lanzó se cierra, el servidor se cae. No es algo que un pipeline headless (n8n, CI) pueda usar: es una herramienta de **revisión humana** antes del render final de producción, no parte del flujo automatizado de etapas 1-8.
 
 ## Output
 
