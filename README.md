@@ -35,7 +35,9 @@ type-i-shorts-pipeline/
 │   ├── fish_audio_client.py         # respaldo directo-a-API para TTS (preferir MCP si está disponible)
 │   ├── airtable_sync.py             # respaldo directo-a-API para Airtable (preferir conector MCP/n8n)
 │   └── hyperframes/
-│       └── template_general_video.html   # punto de partida para el ensamblaje
+│       ├── template_general_video.html   # plantilla validada con un render real (ver test-run-ada-lovelace.md)
+│       ├── abrir-studio.cmd               # lanza HyperFrames Studio (preview en vivo + edición) — Windows
+│       └── abrir-studio.sh                # idem, macOS/Linux
 └── ui/
     └── qa-review-queue/              # mockup de la cola de revisión de la etapa [7]
         ├── Main.dc.html               # fuente del artifact (Claude Design-canvas)
