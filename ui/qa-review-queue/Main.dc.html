@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cola de revisión QA</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #F7F7F5; color: #1A1A18; }
+  a { color: #4F46E5; } a:hover { color: #4338CA; }
+  button { font-family: inherit; }
+</style>
+</helmet>
+
+<div style="width: 100%; min-height: 100vh; box-sizing: border-box; padding: 40px 48px 64px; display: flex; flex-direction: column; gap: 28px; max-width: 1280px; margin: 0 auto">
+
+  <!-- Header -->
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1A1A18">Cola de revisión QA — Faceless YC</h1>
+    <p style="margin: 0; font-size: 14px; color: #6B6A64">Vista ilustrativa con datos de muestra — no conectada a Airtable todavía. 8 de 100 shorts del lote mostrados.</p>
+  </div>
+
+  <!-- Stat tiles -->
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px">
+    <div style="background: #fff; border: 1px solid #E5E3DD; border-radius: 12px; padding: 18px 20px">
+      <div style="font-size: 26px; font-weight: 700; color: #1A1A18">{{counts.total}}</div>
+      <div style="font-size: 13px; color: #6B6A64; margin-top: 4px">En este lote</div>
+    </div>
+    <div style="background: #fff; border: 1px solid #E5E3DD; border-radius: 12px; padding: 18px 20px">
+      <div style="font-size: 26px; font-weight: 700; color: #92400E">{{counts.pendiente}}</div>
+      <div style="font-size: 13px; color: #6B6A64; margin-top: 4px">Pendiente revisión</div>
+    </div>
+    <div style="background: #fff; border: 1px solid #E5E3DD; border-radius: 12px; padding: 18px 20px">
+      <div style="font-size: 26px; font-weight: 700; color: #1E40AF">{{counts.produccion}}</div>
+      <div style="font-size: 13px; color: #6B6A64; margin-top: 4px">En producción</div>
+    </div>
+    <div style="background: #fff; border: 1px solid #E5E3DD; border-radius: 12px; padding: 18px 20px">
+      <div style="font-size: 26px; font-weight: 700; color: #991B1B">{{counts.rechazado}}</div>
+      <div style="font-size: 13px; color: #6B6A64; margin-top: 4px">Rechazado</div>
+    </div>
+    <div style="background: #fff; border: 1px solid #E5E3DD; border-radius: 12px; padding: 18px 20px">
+      <div style="font-size: 26px; font-weight: 700; color: #166534">{{counts.aprobado}}</div>
+      <div style="font-size: 13px; color: #6B6A64; margin-top: 4px">Aprobado</div>
+    </div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div style="display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid #E5E3DD; padding-bottom: 12px">
+    <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="5">
+      <button
+        onClick="{{tab.onClick}}"
+        style="padding: 8px 16px; border-radius: 999px; border: 1px solid {{tab.borderColor}}; background: {{tab.bg}}; color: {{tab.color}}; font-size: 13px; font-weight: 600"
+      >{{tab.label}} ({{tab.count}})</button>
+    </sc-for>
+  </div>
+
+  <!-- Card grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+    <sc-for list="{{items}}" as="item" hint-placeholder-count="8">
+      <div style="background: #fff; border: 1px solid #E5E3DD; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">
+          <div>
+            <div style="font-size: 16px; font-weight: 700; color: #1A1A18">{{item.figure}}</div>
+            <div style="font-size: 12px; color: #6B6A64; margin-top: 2px">Etapa {{item.stageNum}} — {{item.stageName}}</div>
+          </div>
+          <span style="background: {{item.statusBg}}; color: {{item.statusColor}}; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap">{{item.statusLabel}}</span>
+        </div>
+
+        <p style="margin: 0; font-size: 13px; color: #44433E; line-height: 1.5">{{item.note}}</p>
+
+        <sc-if value="{{item.showPendingActions}}" hint-placeholder-val="{{true}}">
+          <div style="display: flex; gap: 8px; margin-top: 4px">
+            <button onClick="{{item.onApprove}}" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: none; background: #166534; color: #fff; font-size: 13px; font-weight: 600">Aprobar</button>
+            <button onClick="{{item.onReject}}" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid #991B1B; background: #fff; color: #991B1B; font-size: 13px; font-weight: 600">Rechazar</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{item.showRegenerate}}" hint-placeholder-val="{{false}}">
+          <div style="margin-top: 4px">
+            <button onClick="{{item.onRegenerate}}" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #1E40AF; background: #fff; color: #1E40AF; font-size: 13px; font-weight: 600">Regenerar etapa {{item.regenerateStage}}</button>
+          </div>
+        </sc-if>
+
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      filter: "todos",
+      items: [
+        { id: "ada", figure: "Ada Lovelace", stageNum: 7, stageName: "QA", status: "aprobado", note: "Corrección histórica aplicada en escena 5 antes de aprobar (ver test-run).", regenerateStage: 1 },
+        { id: "bolivar", figure: "Simón Bolívar", stageNum: 4, stageName: "FLF2V", status: "produccion", note: "Render en curso en L40S — 6 de 11 escenas completadas.", regenerateStage: 4 },
+        { id: "frida", figure: "Frida Kahlo", stageNum: 7, stageName: "QA", status: "rechazado", note: "Drift de identidad detectado en la escena 6 (rostro en primer plano, movimiento complejo).", regenerateStage: 3 },
+        { id: "rita", figure: "Rita Moreno", stageNum: 8, stageName: "Export", status: "aprobado", note: "Título y thumbnail generados, registro en Airtable listo.", regenerateStage: 8 },
+        { id: "che", figure: "Che Guevara", stageNum: 2, stageName: "Shot-list", status: "pendiente", note: "Shot-list generado — esperando selección de variantes de movimiento.", regenerateStage: 2 },
+        { id: "curie", figure: "Marie Curie", stageNum: 5, stageName: "TTS", status: "produccion", note: "Generando voz en off con Fish Audio (s2.1-pro-free).", regenerateStage: 5 },
+        { id: "tesla", figure: "Nikola Tesla", stageNum: 7, stageName: "QA", status: "pendiente", note: "Ensamblaje listo — esperando tu revisión de checklist.", regenerateStage: 1 },
+        { id: "tubman", figure: "Harriet Tubman", stageNum: 3, stageName: "Keyframes", status: "produccion", note: "InstantID generando las 22 imágenes de referencia por escena.", regenerateStage: 3 }
+      ]
+    };
+  }
+
+  setFilter(f) {
+    this.setState({ filter: f });
+  }
+
+  approve(id) {
+    this.setState({
+      items: this.state.items.map((it) =>
+        it.id === id ? { ...it, status: "aprobado", note: "Aprobado manualmente desde la cola de revisión." } : it
+      ),
+    });
+  }
+
+  reject(id) {
+    this.setState({
+      items: this.state.items.map((it) =>
+        it.id === id ? { ...it, status: "rechazado", note: "Marcado para revisión — asignar etapa de regeneración." } : it
+      ),
+    });
+  }
+
+  regenerate(id) {
+    this.setState({
+      items: this.state.items.map((it) =>
+        it.id === id ? { ...it, status: "produccion", note: "Reenviado a la etapa " + it.regenerateStage + " para regenerar." } : it
+      ),
+    });
+  }
+
+  renderVals() {
+    const statusMeta = {
+      pendiente: { label: "Pendiente", color: "#92400E", bg: "#FEF3C7" },
+      aprobado: { label: "Aprobado", color: "#166534", bg: "#DCFCE7" },
+      rechazado: { label: "Rechazado", color: "#991B1B", bg: "#FEE2E2" },
+      produccion: { label: "En producción", color: "#1E40AF", bg: "#DBEAFE" },
+    };
+
+    const allItems = this.state.items.map((it) => ({
+      ...it,
+      statusLabel: statusMeta[it.status].label,
+      statusColor: statusMeta[it.status].color,
+      statusBg: statusMeta[it.status].bg,
+      showPendingActions: it.status === "pendiente",
+      showRegenerate: it.status === "rechazado",
+      onApprove: () => this.approve(it.id),
+      onReject: () => this.reject(it.id),
+      onRegenerate: () => this.regenerate(it.id),
+    }));
+
+    const filtered =
+      this.state.filter === "todos" ? allItems : allItems.filter((it) => it.status === this.state.filter);
+
+    const counts = {
+      total: allItems.length,
+      pendiente: allItems.filter((i) => i.status === "pendiente").length,
+      aprobado: allItems.filter((i) => i.status === "aprobado").length,
+      rechazado: allItems.filter((i) => i.status === "rechazado").length,
+      produccion: allItems.filter((i) => i.status === "produccion").length,
+    };
+
+    const tabDefs = [
+      { key: "todos", label: "Todos", count: counts.total },
+      { key: "pendiente", label: "Pendiente", count: counts.pendiente },
+      { key: "produccion", label: "En producción", count: counts.produccion },
+      { key: "rechazado", label: "Rechazado", count: counts.rechazado },
+      { key: "aprobado", label: "Aprobado", count: counts.aprobado },
+    ];
+
+    const tabs = tabDefs.map((t) => {
+      const active = this.state.filter === t.key;
+      return {
+        ...t,
+        onClick: () => this.setFilter(t.key),
+        bg: active ? "#1A1A18" : "#fff",
+        color: active ? "#fff" : "#44433E",
+        borderColor: active ? "#1A1A18" : "#E5E3DD",
+      };
+    });
+
+    return { items: filtered, counts, tabs };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!--
+  template_general_video.html
+  Plantilla de partida para el skill 06-assembly-hyperframes, basada en el
+  skill /general-video de HyperFrames.
+
+  IMPORTANTE: esto es un punto de partida a validar, no una plantilla
+  probada. Antes de usarla en producción:
+    1. Corre `npx hyperframes init` para generar el scaffolding real del
+       proyecto (crea su propia estructura de carpetas/config).
+    2. Usa esta estructura HTML como referencia para adaptar la plantilla
+       que genere `init`, no como reemplazo directo de archivo.
+    3. Corre `npx hyperframes preview` para validar visualmente antes de
+       `npx hyperframes render`.
+
+  No llames video.play()/pause() ni montes/desmontes clips manualmente vía
+  JS — HyperFrames gestiona el ciclo de vida de los clips a partir de los
+  atributos data-* declarados aquí.
+
+  Overrides esperados por short (inyectados por el pipeline, no hardcodeados
+  aquí): rutas a los 11 clips de video (scene_01..scene_11), ruta al archivo
+  de VO continuo, ruta opcional de música de fondo, texto/estilo de overlay
+  de marca.
+-->
+<div
+  id="stage"
+  data-composition-id="type-i-short"
+  data-width="1080"
+  data-height="1920"
+>
+  <!-- Pista de video: 11 clips en orden de scene_id, cada uno con su
+       start/duration dentro de la línea de tiempo de ~90s.
+       data-start y data-duration se calculan en el paso de overrides
+       a partir de la duración real de cada clip (nominal 8s, ajustar si
+       el render de RunComfy entrega duración distinta). -->
+  <video
+    src="{{SCENE_01_VIDEO_PATH}}"
+    data-start="0"
+    data-duration="8"
+    data-track-index="0"
+  ></video>
+  <video
+    src="{{SCENE_02_VIDEO_PATH}}"
+    data-start="8"
+    data-duration="8"
+    data-track-index="0"
+  ></video>
+  <!-- ... repetir para scene_03 .. scene_11, data-start acumulativo ... -->
+  <video
+    src="{{SCENE_11_VIDEO_PATH}}"
+    data-start="80"
+    data-duration="10"
+    data-track-index="0"
+  ></video>
+
+  <!-- Pista de voz en off: continua a lo largo del short -->
+  <audio
+    src="{{VOICEOVER_FULL_PATH}}"
+    data-start="0"
+    data-duration="90"
+    data-track-index="1"
+  ></audio>
+
+  <!-- Música de fondo opcional, volumen bajo -->
+  <audio
+    src="{{BACKGROUND_MUSIC_PATH}}"
+    data-start="0"
+    data-duration="90"
+    data-track-index="2"
+  ></audio>
+
+  <!-- Overlay de marca / branding — placeholder, definir estilo real del
+       canal (logo, lower-third, etc.) -->
+  <div
+    class="brand-overlay"
+    data-start="0"
+    data-duration="90"
+    data-track-index="3"
+  >
+    {{BRAND_OVERLAY_CONTENT}}
+  </div>
+
+  <!-- Captions: generados por HyperFrames a partir de la pista de VO, o
+       proveídos como .srt según configuración del skill /general-video -->
+</div>

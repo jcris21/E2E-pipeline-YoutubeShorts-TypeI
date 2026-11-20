@@ -1,0 +1,29 @@
+{
+  "_comment_1": "PLANTILLA — no es el grafo real. Ver README.md en esta carpeta antes de usar.",
+  "_comment_2": "Reemplazar este archivo completo con el workflow_api.json exportado desde tu propio canvas de ComfyUI Cloud en RunComfy.",
+  "_overrides_shape_expected_by_runcomfy_client": {
+    "overrides": {
+      "<NODE_ID_first_frame_loader>": {
+        "inputs": {
+          "image": "<url o path de start_image de la escena>"
+        }
+      },
+      "<NODE_ID_last_frame_loader>": {
+        "inputs": {
+          "image": "<url o path de end_image de la escena>"
+        }
+      },
+      "<NODE_ID_prompt_text>": {
+        "inputs": {
+          "text": "<camera_movement de la escena>"
+        }
+      },
+      "<NODE_ID_duration_or_length>": {
+        "inputs": {
+          "duration_seconds": 8
+        }
+      }
+    }
+  },
+  "_nota": "Los <NODE_ID_...> reales aparecen solo después de exportar tu grafo real desde ComfyUI Cloud — no son predecibles de antemano. Sustituir cada placeholder por el ID numérico real de ese nodo en tu grafo exportado."
+}
