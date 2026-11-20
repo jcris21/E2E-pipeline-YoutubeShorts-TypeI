@@ -14,11 +14,13 @@ Después de aprobar el shot-list de `02-shotlist-breakdown`, antes de renderizar
 ```json
 {
   "script_id": "string",
-  "scenes": [ { "scene_id": "scene_01", "start_frame_prompt": "...", "end_frame_prompt": "..." } ],
+  "scenes": [ { "scene_id": "scene_01", "start_frame_prompt_v2": "...", "end_frame_prompt_v2": "...", "v2_status": "Approved" } ],
   "reference_image": "path/url — retrato limpio de la figura histórica, una sola vez por short",
   "external_keyframes": "opcional — si se proveen, se usan directo y se salta la generación interna (ver 'Input alternativo' abajo)"
 }
 ```
+
+**Solo se consumen escenas con `v2_status = "Approved"`** (tabla `Shot List` en Airtable, ver `02-shotlist-breakdown`). El texto que llega a `CLIPTextEncode` en el grafo de abajo es siempre `start_frame_prompt_v2` / `end_frame_prompt_v2` — nunca el v1 descriptivo, que es solo para revisión humana y no tiene la densidad de detalle (lente, iluminación, grano, boosters de calidad) que necesita un motor de imagen. Si una escena llega con `v2_status` distinto de `Approved`, esta etapa se detiene y la devuelve a `02-shotlist-breakdown` en vez de generar con un prompt no aprobado.
 
 ## Mecanismo de consistencia — default: InstantID (ComfyUI/RunComfy)
 
