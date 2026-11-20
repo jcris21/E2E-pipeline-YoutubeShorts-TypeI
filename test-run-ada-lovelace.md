@@ -1,6 +1,6 @@
 # Test End-to-End — Figura de prueba: Ada Lovelace
 
-**Aviso de alcance:** las etapas 1, 2, 3 (contenido/razonamiento), 7 y 8 producen aquí su output **real** — son generables sin infraestructura externa. Las etapas 4 (RunComfy), 5 (Fish Audio) y 6 (HyperFrames) requieren credenciales/infra que no están conectadas en este entorno de prueba — para esas se muestra el **payload exacto** que se enviaría, no una ejecución real. Donde el pipeline detectó un problema real durante este test, se deja visible en vez de corregirlo en silencio — es justamente lo que la etapa de QA está diseñada para atrapar.
+**Aviso de alcance (actualizado 2026-11-19):** las etapas 1, 2, 3 (contenido/razonamiento), 7 y 8 producen aquí su output **real** — son generables sin infraestructura externa. La etapa 6 (HyperFrames) también se **ejecutó de verdad** con un render MP4 real, usando assets placeholder en vez de los clips/audio reales de las etapas 4 y 5 (ver sección [6] para el detalle y los 2 errores reales que esa corrida encontró y corrigió). Las etapas 4 (RunComfy) y 5 (Fish Audio) siguen sin credenciales/infra conectadas en este entorno — para esas se sigue mostrando el **payload exacto** que se enviaría, no una ejecución real. Donde el pipeline detectó un problema real durante este test, se deja visible en vez de corregirlo en silencio — es justamente lo que la etapa de QA está diseñada para atrapar.
 
 ---
 
@@ -96,23 +96,57 @@ Texto total de narración del short (11 escenas): ~1,340 caracteres → dentro d
 
 ---
 
-## [6] Ensamblaje — overrides de HyperFrames simulados (no ejecutado; sin entorno Node.js/FFmpeg disponible aquí)
+## [6] Ensamblaje — Validación real — etapa 6 (actualizado 2026-11-19)
+
+**Corrección respecto al test original:** se había asumido que el sandbox no tenía Node.js/FFmpeg disponibles y por eso esta etapa solo mostró un payload simulado. Eso era incorrecto — al revisar de nuevo, el entorno sí tiene `node v22.23.5`, `ffmpeg 6.1.1` y `npx hyperframes` (`v0.9.71`) funcionando. Esta sección reemplaza el payload simulado por una **ejecución real** del skill.
+
+### Qué se hizo
+
+1. `npx hyperframes init ada-lovelace-short --example blank --resolution portrait --non-interactive --skip-skills` → scaffold real del proyecto.
+2. 11 clips de video placeholder generados con FFmpeg (color sólido + texto quemado con el nombre de cada escena, 1080×1920, 30fps), en lugar de los clips reales de LTX-2.5/RunComfy (etapa 4, aún sin credenciales en este sandbox):
+
+   ```
+   scene_01.mp4 (8s)  "01 - Londres 1815"
+   scene_02.mp4 (8s)  "02 - La nina y las maquinas"
+   scene_03.mp4 (8s)  "03 - Mary Somerville"
+   scene_04.mp4 (8s)  "04 - Charles Babbage"
+   scene_05.mp4 (8s)  "05 - El Motor Analitico"
+   scene_06.mp4 (8s)  "06 - Las Notas de Ada"
+   scene_07.mp4 (8s)  "07 - El primer algoritmo"
+   scene_08.mp4 (8s)  "08 - Poetica y ciencia"
+   scene_09.mp4 (8s)  "09 - Visionaria incomprendida"
+   scene_10.mp4 (8s)  "10 - El legado olvidado"
+   scene_11.mp4 (10s) "11 - Ada Lovelace hoy"
+   ```
+3. Audio de VO + música placeholder (tonos, 90.044s), en lugar del audio real de Fish Audio (etapa 5, aún sin credenciales en este sandbox).
+4. Composición HTML armada siguiendo el patrón real de HyperFrames (`class="clip"`, `id` único por elemento, `window.__timelines` registrado) — ver `scripts/hyperframes/template_general_video.html`, ya actualizado con las correcciones de abajo.
+5. `npm run check` → **2 errores reales encontrados y corregidos** (ver abajo).
+6. `npm run render` → **MP4 real generado.**
+
+### Resultado del render
 
 ```
-data-composition-id="ada-lovelace-short"
-scene_01.mp4  → data-start=0   data-duration=8
-scene_02.mp4  → data-start=8   data-duration=8
-scene_03.mp4  → data-start=16  data-duration=8
-scene_04.mp4  → data-start=24  data-duration=8
-scene_05.mp4  → data-start=32  data-duration=8
-scene_06.mp4  → data-start=40  data-duration=8
-scene_07.mp4  → data-start=48  data-duration=8
-scene_08.mp4  → data-start=56  data-duration=8
-scene_09.mp4  → data-start=64  data-duration=8
-scene_10.mp4  → data-start=72  data-duration=8
-scene_11.mp4  → data-start=80  data-duration=10
-VO completo   → data-start=0   data-duration=90  (track-index 1)
+Archivo: ada-lovelace-short_2026-11-19_20-51-08.mp4
+Duración: 90.000s exactos
+Resolución: 1080x1920
+Video: H.264  ·  Audio: AAC, 48kHz
+Tamaño: 2.7 MB
+Tiempo de render: 6m 2.7s (screenshot capture, software GPU — un runner con
+  GPU real o chrome-headless-shell debería ser más rápido)
 ```
+
+Verificado visualmente extrayendo frames en t=0s, t=5s y t=85s: escena 01 ("Londres 1815") se muestra en los primeros 8s, escena 11 ("Ada Lovelace hoy") se muestra en los últimos 10s — el timing acumulativo (0, 8, 16, ..., 80) es exacto.
+
+### 2 errores reales encontrados por `npm run check` (no estaban documentados antes)
+
+1. **`media_missing_id` (error):** todo `<video>`/`<audio>` con `data-start` necesita un `id` único — sin él, el render **congela el video** y **silencia el audio**, sin ningún error visible en el render mismo (solo lo detecta `check`). El `SKILL.md` y la plantilla originales no mencionaban esto.
+2. **`root_composition_missing_html_wrapper` (error):** el comentario de documentación largo que encabezaba la plantilla original, puesto *antes* de `<!doctype html>`, rompía el lint (exige que el DOCTYPE sea literalmente el primer byte del archivo). Se corrigió moviendo la documentación a un comentario dentro de `<head>`.
+
+Ambos se corrigieron en `scripts/hyperframes/template_general_video.html` y en `skills/06-assembly-hyperframes/SKILL.md` (sección nueva "Reglas críticas descubiertas al validar"). La plantilla corregida se volvió a probar con los mismos assets placeholder y pasó `check` limpio (0 errores, 0 warnings).
+
+### Lo que sigue sin poder probarse end-to-end aquí
+
+Las etapas 4 (RunComfy/LTX-2.5 FLF2V) y 5 (Fish Audio TTS) siguen sin credenciales/API keys en este sandbox — no hay MCP de Fish Audio conectado ni variables de entorno de RunComfy. Esta validación de la etapa 6 usó assets placeholder en su lugar; sigue pendiente un piloto real con clips/audio generados de verdad por esas dos etapas antes de confiar en el pipeline completo en producción.
 
 ---
 

@@ -1,84 +1,147 @@
-<!--
-  template_general_video.html
-  Plantilla de partida para el skill 06-assembly-hyperframes, basada en el
-  skill /general-video de HyperFrames.
+<!doctype html>
+<html lang="es" data-resolution="portrait">
+  <head>
+    <!--
+      template_general_video.html
+      Plantilla para el skill 06-assembly-hyperframes, basada en el skill
+      /general-video de HyperFrames.
 
-  IMPORTANTE: esto es un punto de partida a validar, no una plantilla
-  probada. Antes de usarla en producción:
-    1. Corre `npx hyperframes init` para generar el scaffolding real del
-       proyecto (crea su propia estructura de carpetas/config).
-    2. Usa esta estructura HTML como referencia para adaptar la plantilla
-       que genere `init`, no como reemplazo directo de archivo.
-    3. Corre `npx hyperframes preview` para validar visualmente antes de
-       `npx hyperframes render`.
+      IMPORTANTE: este comentario va DENTRO de <head>, no antes de <!doctype
+      html> — HyperFrames' lint (root_composition_missing_html_wrapper)
+      exige que el DOCTYPE sea literalmente el primer byte del archivo; un
+      comentario largo antes rompe el check aunque el HTML sea válido para
+      un navegador. Este fue uno de los hallazgos de la validación real.
 
-  No llames video.play()/pause() ni montes/desmontes clips manualmente vía
-  JS — HyperFrames gestiona el ciclo de vida de los clips a partir de los
-  atributos data-* declarados aquí.
+      VALIDADA CON UN RENDER REAL (no es solo un boceto): corrida en sandbox
+      con hyperframes@0.9.71 (Node 22, FFmpeg) usando 11 clips + VO + música
+      placeholder. Resultado: MP4 de 90.000s exactos, 1080x1920, H.264/AAC.
+      Ver test-run-ada-lovelace.md, sección "Validación real — etapa 6",
+      para el detalle completo.
 
-  Overrides esperados por short (inyectados por el pipeline, no hardcodeados
-  aquí): rutas a los 11 clips de video (scene_01..scene_11), ruta al archivo
-  de VO continuo, ruta opcional de música de fondo, texto/estilo de overlay
-  de marca.
--->
-<div
-  id="stage"
-  data-composition-id="type-i-short"
-  data-width="1080"
-  data-height="1920"
->
-  <!-- Pista de video: 11 clips en orden de scene_id, cada uno con su
-       start/duration dentro de la línea de tiempo de ~90s.
-       data-start y data-duration se calculan en el paso de overrides
-       a partir de la duración real de cada clip (nominal 8s, ajustar si
-       el render de RunComfy entrega duración distinta). -->
-  <video
-    src="{{SCENE_01_VIDEO_PATH}}"
-    data-start="0"
-    data-duration="8"
-    data-track-index="0"
-  ></video>
-  <video
-    src="{{SCENE_02_VIDEO_PATH}}"
-    data-start="8"
-    data-duration="8"
-    data-track-index="0"
-  ></video>
-  <!-- ... repetir para scene_03 .. scene_11, data-start acumulativo ... -->
-  <video
-    src="{{SCENE_11_VIDEO_PATH}}"
-    data-start="80"
-    data-duration="10"
-    data-track-index="0"
-  ></video>
+      Uso:
+        1. `npx hyperframes init <nombre> --example blank --resolution
+           portrait --non-interactive --skip-skills` para el scaffolding
+           real del proyecto (genera su propio index.html base — usa ESTE
+           archivo como referencia para adaptarlo, no lo copies encima a
+           ciegas).
+        2. Reemplaza los {{PLACEHOLDER}} con las rutas reales inyectadas
+           por el pipeline (overrides por short).
+        3. SIEMPRE `npm run check` antes de `npm run render` — ver reglas
+           críticas abajo, el render no avisa si algo está mal configurado.
+        4. `npx hyperframes preview` para QA visual si hace falta ajustar
+           timing.
 
-  <!-- Pista de voz en off: continua a lo largo del short -->
-  <audio
-    src="{{VOICEOVER_FULL_PATH}}"
-    data-start="0"
-    data-duration="90"
-    data-track-index="1"
-  ></audio>
+      Reglas críticas (descubiertas al validar; no están en la doc genérica):
+        - Todo <video>/<audio> con data-start necesita un id ÚNICO. Sin id,
+          hyperframes render CONGELA el video y SILENCIA el audio — sin
+          error visible salvo que corras `npm run check` (lo marca como
+          media_missing_id, severidad error).
+        - Todo elemento visual con tiempo necesita class="clip" además de
+          id.
+        - Un clip sin audio propio (como los de LTX-2.5 FLF2V, cuya voz
+          viene de la pista de VO separada) va con data-has-audio="false"
+          + muted.
+        - Un overlay que no ocupa el frame completo (branding) no debe
+          heredar height:100%/width:100% de .clip sin sobreescribirlo (o
+          aparece fuera de canvas aunque top/left/bottom parezcan
+          correctos).
+        - No llamar video.play()/pause() ni montar/desmontar clips
+          manualmente vía JS — HyperFrames gestiona el ciclo de vida a
+          partir de los atributos data-* declarados aquí.
 
-  <!-- Música de fondo opcional, volumen bajo -->
-  <audio
-    src="{{BACKGROUND_MUSIC_PATH}}"
-    data-start="0"
-    data-duration="90"
-    data-track-index="2"
-  ></audio>
+      Overrides esperados por short (inyectados por el pipeline, no
+      hardcodeados aquí): rutas a los 11 clips de video (scene_01..
+      scene_11), ruta al archivo de VO continuo, ruta opcional de música
+      de fondo, texto del overlay de marca.
+    -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --ground: #000;
+        --ink: #ffffff;
+        --font-display: sans-serif;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--ground);
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      #brand-overlay {
+        position: absolute;
+        left: 40px;
+        bottom: 90px;
+        width: auto;
+        height: auto;
+        color: var(--ink);
+        font-family: var(--font-display);
+        font-size: 36px;
+        font-weight: 600;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 10px 18px;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="type-i-short"
+      data-start="0"
+      data-duration="90"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- Pista de video: 11 clips en orden de scene_id. data-start acumulativo,
+           data-duration nominal 8s (última escena 10s) — ajustar si el render
+           de RunComfy entrega duración distinta a la nominal. -->
+      <video id="scene-01" class="clip" src="{{SCENE_01_VIDEO_PATH}}" data-start="0"  data-duration="8"  data-has-audio="false" muted data-track-index="0"></video>
+      <video id="scene-02" class="clip" src="{{SCENE_02_VIDEO_PATH}}" data-start="8"  data-duration="8"  data-has-audio="false" muted data-track-index="0"></video>
+      <video id="scene-03" class="clip" src="{{SCENE_03_VIDEO_PATH}}" data-start="16" data-duration="8"  data-has-audio="false" muted data-track-index="0"></video>
+      <video id="scene-04" class="clip" src="{{SCENE_04_VIDEO_PATH}}" data-start="24" data-duration="8"  data-has-audio="false" muted data-track-index="0"></video>
+      <video id="scene-05" class="clip" src="{{SCENE_05_VIDEO_PATH}}" data-start="32" data-duration="8"  data-has-audio="false" muted data-track-index="0"></video>
+      <video id="scene-06" class="clip" src="{{SCENE_06_VIDEO_PATH}}" data-start="40" data-duration="8"  data-has-audio="false" muted data-track-index="0"></video>
+      <video id="scene-07" class="clip" src="{{SCENE_07_VIDEO_PATH}}" data-start="48" data-duration="8"  data-has-audio="false" muted data-track-index="0"></video>
+      <video id="scene-08" class="clip" src="{{SCENE_08_VIDEO_PATH}}" data-start="56" data-duration="8"  data-has-audio="false" muted data-track-index="0"></video>
+      <video id="scene-09" class="clip" src="{{SCENE_09_VIDEO_PATH}}" data-start="64" data-duration="8"  data-has-audio="false" muted data-track-index="0"></video>
+      <video id="scene-10" class="clip" src="{{SCENE_10_VIDEO_PATH}}" data-start="72" data-duration="8"  data-has-audio="false" muted data-track-index="0"></video>
+      <video id="scene-11" class="clip" src="{{SCENE_11_VIDEO_PATH}}" data-start="80" data-duration="10" data-has-audio="false" muted data-track-index="0"></video>
 
-  <!-- Overlay de marca / branding — placeholder, definir estilo real del
-       canal (logo, lower-third, etc.) -->
-  <div
-    class="brand-overlay"
-    data-start="0"
-    data-duration="90"
-    data-track-index="3"
-  >
-    {{BRAND_OVERLAY_CONTENT}}
-  </div>
+      <!-- Pista de voz en off: continua a lo largo del short -->
+      <audio id="voiceover-track" src="{{VOICEOVER_FULL_PATH}}" data-start="0" data-duration="90" data-volume="1" data-track-index="1"></audio>
 
-  <!-- Captions: generados por HyperFrames a partir de la pista de VO, o
-       proveídos como .srt según configuración del skill /general-video -->
-</div>
+      <!-- Música de fondo opcional, volumen bajo -->
+      <audio id="music-track" src="{{BACKGROUND_MUSIC_PATH}}" data-start="0" data-duration="90" data-volume="0.3" data-track-index="2"></audio>
+
+      <!-- Overlay de marca / branding -->
+      <div id="brand-overlay" class="clip" data-start="0" data-duration="90" data-track-index="3" data-layout-allow-safe-zone>
+        {{BRAND_OVERLAY_CONTENT}}
+      </div>
+
+      <!-- Captions: generados por HyperFrames a partir de la pista de VO, o
+           proveídos como .srt según configuración del skill /general-video -->
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines["type-i-short"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
